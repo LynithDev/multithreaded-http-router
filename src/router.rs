@@ -1,6 +1,6 @@
 use std::{sync::Arc, net::TcpListener, io::{BufReader, BufRead}};
 
-use crate::{route::{Route, RouteHandle}, threadpool::ThreadPool, method::Method, request::Request, response::Response};
+use crate::{route::{Route, RouteHandle}, utils::method::Method, request::Request, response::Response, threads::threadpool::ThreadPool};
 
 pub struct Router {
     routes: Vec<Route>,
@@ -28,9 +28,49 @@ impl Router {
         }
     }
 
+    // ALl methods from method.rs
+
     pub fn get(&mut self, path: &str, handler: Arc<RouteHandle>) {
         self.routes.push(Route::new(path, Method::GET, handler));
     }
+
+    pub fn post(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::POST, handler));
+    }
+
+    pub fn put(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::PUT, handler));
+    }
+
+    pub fn delete(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::DELETE, handler));
+    }
+
+    pub fn patch(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::PATCH, handler));
+    }
+
+    pub fn head(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::HEAD, handler));
+    }
+
+    pub fn options(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::OPTIONS, handler));
+    }
+
+    pub fn connect(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::CONNECT, handler));
+    }
+
+    pub fn trace(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::TRACE, handler));
+    }
+
+    pub fn any(&mut self, path: &str, handler: Arc<RouteHandle>) {
+        self.routes.push(Route::new(path, Method::ANY, handler));
+    }
+
+    // The server listeners / starteners
 
     pub fn listen(&mut self) {
         self.listen_handle(|| {});   
@@ -79,6 +119,8 @@ impl Router {
         }
     }
 
+    // Getters
+
     pub fn get_routes(&self) -> &Vec<Route> {
         &self.routes
     }
@@ -92,6 +134,21 @@ impl Router {
     }
 
     pub fn get_route(&self, path: &str) -> Option<&Route> {
-        self.routes.iter().find(|route| route.get_path() == path)
+        for route in &self.routes {
+            if route.get_path() == path {
+                return Some(route);
+            }
+        }
+
+        None
+    }
+
+    pub fn get_route_with_method(&self, path: &str, method: Method) -> Option<&Route> {
+        for route in &self.routes {
+            if route.get_path() == path && route.get_method() == &method {
+                return Some(route);
+            }
+        }
+        return None
     }
 }

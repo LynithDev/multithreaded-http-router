@@ -1,6 +1,6 @@
-use std::{sync::{Arc, mpsc, Mutex}, thread};
+use std::sync::{mpsc, Mutex, Arc};
 
-type Job = Box<dyn FnOnce() + Send + 'static>;
+use super::worker::{Worker, Message};
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
@@ -44,36 +44,4 @@ impl Drop for ThreadPool {
             }
         }
     }
-}
-
-struct Worker {
-    id: usize,
-    thread: Option<thread::JoinHandle<()>>,
-}
-
-impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
-        let thread = thread::spawn(move || loop {
-            let message = receiver.lock().unwrap().recv().unwrap();
-
-            match message {
-                Message::NewJob(job) => {
-                    job();
-                },
-                Message::Terminate => {
-                    break;
-                },
-            }
-        });
-
-        Worker {
-            id,
-            thread: Some(thread),
-        }
-    }
-}
-
-enum Message {
-    NewJob(Job),
-    Terminate,
 }

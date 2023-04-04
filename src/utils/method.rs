@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Method {
     GET,
     POST,
@@ -8,6 +9,7 @@ pub enum Method {
     OPTIONS,
     TRACE,
     PATCH,
+    ANY
 }
 
 impl Method {
@@ -22,6 +24,7 @@ impl Method {
             "OPTIONS" => Some(Method::OPTIONS),
             "TRACE" => Some(Method::TRACE),
             "PATCH" => Some(Method::PATCH),
+            "ANY" => Some(Method::ANY),
             _ => None,
         }
     }
@@ -37,6 +40,7 @@ impl Method {
             Method::OPTIONS => "OPTIONS",
             Method::TRACE => "TRACE",
             Method::PATCH => "PATCH",
+            Method::ANY => "ANY",
         }
     }
 }

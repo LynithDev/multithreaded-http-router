@@ -1,11 +1,10 @@
-use std::net::TcpStream;
-
-use crate::method::Method;
+use crate::utils::method::Method;
 
 pub struct Request {
     pub path: String,
     pub method: Method,
     pub body: String,
+    pub headers: Vec<(String, String)>,
 }
 
 impl Request {
@@ -14,6 +13,7 @@ impl Request {
             path: String::new(),
             method: Method::POST,
             body: String::new(),
+            headers: Vec::new(),
         }
     }
 }
