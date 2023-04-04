@@ -1,3 +1,11 @@
+# Multi-threaded HTTP Router in Rust
+This is a simple HTTP router which is multi-threaded and can handle multiple requests at the same time.
+
+> **Warning**
+> This should not be used in production, as it is not secure and has no error handling. It is only meant for learning purposes.
+
+## Usage
+```rust
 use std::{sync::Arc, thread::sleep, time::Duration};
 
 use http_router::router::Router;
@@ -18,3 +26,4 @@ fn main() {
 
     router.listen();
 }
+```
