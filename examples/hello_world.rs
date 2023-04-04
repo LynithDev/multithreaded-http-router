@@ -6,11 +6,13 @@ fn main() {
     let mut router = Router::create_server(3000);
 
     router.get("/", Arc::new(|req, res| {
-        res.send_file("./index.html");
+        println!("Hello World");
+        res.content("HEllo");
+        res.add_header("Content-Type: text/html");
         res.send();
     }));
 
-    router.post("/post", Arc::new(|req, res| {
+    router.post("/", Arc::new(|req, res| {
         res.content(&req.body);
         res.send();
     }));

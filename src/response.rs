@@ -1,4 +1,4 @@
-use std::{net::TcpStream, io::{Write, Read}, fs};
+use std::{net::TcpStream, io::Write, fs};
 
 use crate::utils::status::StatusCode;
 
@@ -65,10 +65,8 @@ impl Response {
         let builder = vec![
             format!("HTTP/1.1 {} {}", self.status.to_u16(), self.status.to_str()),
             format!("Content-Length: {}", self.content.len()),
-            format!("Content-Type: plain/text"),
             format!("Connection: close"),
-            format!("{}", self.headers.join("\r\n")),
-            format!(""),
+            format!("{}", if self.headers.len() > 0 { self.headers.join("\r\n") + "\r\n" } else { String::new() }),
             format!("{}", self.content)
         ];
         

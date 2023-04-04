@@ -3,7 +3,6 @@ use std::{sync::{Arc, mpsc, Mutex}, thread};
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 pub struct Worker {
-    id: usize,
     pub thread: Option<thread::JoinHandle<()>>,
 }
 
@@ -23,7 +22,6 @@ impl Worker {
         });
 
         Worker {
-            id,
             thread: Some(thread),
         }
     }

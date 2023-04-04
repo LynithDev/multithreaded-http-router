@@ -91,23 +91,47 @@ impl Router {
     }
 
     fn start_server(&self) {
+
+        let routes_arc = Arc::new(self.routes.clone());
+
         for stream in self.listener.as_ref().unwrap().incoming() {
             match stream {
                 Ok(mut stream) => {
-                    let buffer: Vec<_> = BufReader::new(&mut stream)
-                        .lines()
-                        .map(|res| res.unwrap())
-                        .take_while(|line| !line.is_empty())
-                        .collect();
-
-                    let route = self.get_route(&buffer[0].split(" ").collect::<Vec<&str>>()[1]);
-                    if route.is_none() {
-                        continue;
-                    }
-
-                    let handle = route.unwrap().get_handler().clone();
-
+                    let routes = Arc::clone(&routes_arc);
                     self.pool.execute(move || {
+                        // TODO: Rewrite this to support body
+                        // What you can do is set a limit of 1024 bytes, and if there is a Content-Length header, overwrite the limit with the value of the header
+                        // Otherwise, just read 1024 bytes and then stop
+                        
+                        let buffer: Vec<_> = BufReader::new(&mut stream)
+                            .lines()
+                            .map(|res| res.unwrap())
+                            .take_while(|line| !line.is_empty())
+                            .collect();
+                        
+                        let route = routes.iter().find(|route| {
+                            if buffer[0].split(" ").collect::<Vec<_>>().len() < 2 {
+                                return false;
+                            }
+
+                            let path = buffer[0].split(" ").collect::<Vec<_>>()[1];
+
+                            if route.get_method() == &Method::ANY {
+                                return route.get_path() == path;
+                            }
+
+                            let method = buffer[0].split(" ").collect::<Vec<_>>()[0];
+
+                            route.get_path() == path && route.get_method().to_str() == method
+                        });
+
+                        if route.is_none() {
+                            return;
+                        }
+
+                        let handle = route.unwrap().get_handler().clone();
+
+
                         let request = Request::from(buffer);
                         let mut response = Response::from(stream);
 
@@ -133,22 +157,5 @@ impl Router {
         self.port
     }
 
-    pub fn get_route(&self, path: &str) -> Option<&Route> {
-        for route in &self.routes {
-            if route.get_path() == path {
-                return Some(route);
-            }
-        }
-
-        None
-    }
-
-    pub fn get_route_with_method(&self, path: &str, method: Method) -> Option<&Route> {
-        for route in &self.routes {
-            if route.get_path() == path && route.get_method() == &method {
-                return Some(route);
-            }
-        }
-        return None
-    }
+    
 }

@@ -3,6 +3,9 @@ name = "http-router"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = []
+url = ["dep:url"]
 
 [dependencies]
+url = { version = "2.3.1", optional = true }

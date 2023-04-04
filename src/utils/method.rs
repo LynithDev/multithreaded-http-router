@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Method {
     GET,
@@ -12,20 +14,25 @@ pub enum Method {
     ANY
 }
 
+impl Display for Method {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_str())
+    }
+}
+
 impl Method {
-    pub fn from_str(method: &str) -> Option<Method> {
+    pub fn from_str(method: &str) -> Method {
         match method {
-            "GET" => Some(Method::GET),
-            "POST" => Some(Method::POST),
-            "PUT" => Some(Method::PUT),
-            "DELETE" => Some(Method::DELETE),
-            "HEAD" => Some(Method::HEAD),
-            "CONNECT" => Some(Method::CONNECT),
-            "OPTIONS" => Some(Method::OPTIONS),
-            "TRACE" => Some(Method::TRACE),
-            "PATCH" => Some(Method::PATCH),
-            "ANY" => Some(Method::ANY),
-            _ => None,
+            "GET" => Method::GET,
+            "POST" => Method::POST,
+            "PUT" => Method::PUT,
+            "DELETE" => Method::DELETE,
+            "HEAD" => Method::HEAD,
+            "CONNECT" => Method::CONNECT,
+            "OPTIONS" => Method::OPTIONS,
+            "TRACE" => Method::TRACE,
+            "PATCH" => Method::PATCH,
+            _ => Method::ANY,
         }
     }
 
