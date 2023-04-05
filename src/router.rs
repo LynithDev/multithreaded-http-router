@@ -1,6 +1,6 @@
-use std::{sync::Arc, net::TcpListener, io::{BufReader, BufRead}};
+use std::{sync::Arc, net::TcpListener, io::{BufReader, Read}};
 
-use crate::{route::{Route, RouteHandle}, utils::method::Method, request::Request, response::Response, threads::threadpool::ThreadPool};
+use crate::{route::{Route, RouteHandle}, utils::{method::Method, parser::get_header}, threads::threadpool::ThreadPool, request::Request, response::Response};
 
 pub struct Router {
     routes: Vec<Route>,
@@ -96,31 +96,47 @@ impl Router {
 
         for stream in self.listener.as_ref().unwrap().incoming() {
             match stream {
-                Ok(mut stream) => {
+                Ok(stream) => {
                     let routes = Arc::clone(&routes_arc);
                     self.pool.execute(move || {
-                        // TODO: Rewrite this to support body
-                        // What you can do is set a limit of 1024 bytes, and if there is a Content-Length header, overwrite the limit with the value of the header
-                        // Otherwise, just read 1024 bytes and then stop
-                        
-                        let buffer: Vec<_> = BufReader::new(&mut stream)
-                            .lines()
-                            .map(|res| res.unwrap())
-                            .take_while(|line| !line.is_empty())
-                            .collect();
-                        
+
+                        let mut reader = BufReader::new(&stream);
+                        let mut buffer = [0; 1024];
+                        let mut message = Vec::<u8>::new();
+                        let mut content_length = None;
+
+                        loop {
+                            let bytes_read = reader.read(&mut buffer).unwrap();
+
+                            if bytes_read == 0 {
+                                break;
+                            }
+
+                            if content_length.is_none() {
+                                content_length = get_header(&buffer, "Content-Length").map(|s| s.parse::<usize>().unwrap());
+                            }
+
+                            message.extend_from_slice(&buffer[..bytes_read]);
+
+                            if message.len() >= content_length.unwrap_or(0) {
+                                break;
+                            }
+                        }
+
+                        let message = String::from_utf8(message).unwrap().split("\n").map(|s| s.trim().to_owned()).collect::<Vec<_>>();
+
                         let route = routes.iter().find(|route| {
-                            if buffer[0].split(" ").collect::<Vec<_>>().len() < 2 {
+                            if message[0].split(" ").collect::<Vec<_>>().len() < 2 {
                                 return false;
                             }
 
-                            let path = buffer[0].split(" ").collect::<Vec<_>>()[1];
+                            let path = message[0].split(" ").collect::<Vec<_>>()[1];
 
                             if route.get_method() == &Method::ANY {
                                 return route.get_path() == path;
                             }
 
-                            let method = buffer[0].split(" ").collect::<Vec<_>>()[0];
+                            let method = message[0].split(" ").collect::<Vec<_>>()[0];
 
                             route.get_path() == path && route.get_method().to_str() == method
                         });
@@ -131,8 +147,7 @@ impl Router {
 
                         let handle = route.unwrap().get_handler().clone();
 
-
-                        let request = Request::from(buffer);
+                        let request = Request::from(&stream, message);
                         let mut response = Response::from(stream);
 
                         handle(&request, &mut response);

@@ -5,7 +5,7 @@ use crate::utils::status::StatusCode;
 pub struct Response {
     status: StatusCode,
     content: String,
-    headers: Vec<String>,
+    headers: Vec<(String, String)>,
     stream: TcpStream,
 }
 
@@ -34,12 +34,34 @@ impl Response {
         self
     }
 
-    pub fn add_header(&mut self, header: &str) -> &mut Self {
-        self.headers.push(header.to_owned());
+    pub fn write(&mut self, body: &str) -> &mut Self {
+        self.content.push_str(body);
         self
     }
 
-    pub fn set_headers(&mut self, headers: Vec<String>) -> &mut Self {
+    pub fn html(&mut self, body: &str) -> &mut Self {
+        self.content = body.to_owned();
+        self.add_header("Content-Type", "text/html");
+        self
+    }
+
+    pub fn json(&mut self, body: &str) -> &mut Self {
+        self.content = body.to_owned();
+        self.add_header("Content-Type", "application/json");
+        self
+    }
+
+    pub fn add_header(&mut self, header: &str, value: &str) -> &mut Self {
+        self.headers.push((header.to_owned(), value.to_owned()));
+        self
+    }
+
+    pub fn set_header(&mut self, header: &str, value: &str) -> &mut Self {
+        self.headers = vec![(header.to_owned(), value.to_owned())];
+        self
+    }
+
+    pub fn set_headers(&mut self, headers: Vec<(String, String)>) -> &mut Self {
         self.headers = headers;
         self
     }
@@ -57,16 +79,22 @@ impl Response {
         
         self.content(&file);
         self.status_code(200);
-        self.add_header("Content-Type: text/html");
+        self.add_header("Content-Type", "text/html");
         self.send();
     }
 
     pub fn send(&mut self) {
+        let headers = if self.headers.len() > 0 { 
+            self.headers.iter().map(|(k, v)| format!("{}: {}", k, v)).collect::<Vec<String>>().join("\r\n") + "\r\n"
+        } else { 
+            String::new()
+        };
+
         let builder = vec![
             format!("HTTP/1.1 {} {}", self.status.to_u16(), self.status.to_str()),
             format!("Content-Length: {}", self.content.len()),
             format!("Connection: close"),
-            format!("{}", if self.headers.len() > 0 { self.headers.join("\r\n") + "\r\n" } else { String::new() }),
+            format!("{}", headers),
             format!("{}", self.content)
         ];
         
