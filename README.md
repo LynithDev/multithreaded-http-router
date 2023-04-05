@@ -6,24 +6,24 @@ This is a simple HTTP router which is multi-threaded and can handle multiple req
 
 ## Usage
 ```rust
-use std::{sync::Arc, thread::sleep, time::Duration};
+let mut router = Router::create_server(3000);
 
-use http_router::router::Router;
+router.get("/", Arc::new(|req, res| {
+    res.html("<h1>Hello World!</h1>");
+    res.send();
+}));
 
-fn main() {
-    let mut router = Router::create_server(3000);
+router.post("/", Arc::new(|req, res| {
+    res.json(&req.body);
+    res.send();
+}));
 
-    router.get("/", Arc::new(|req, res| {
-        res.content("Hello World!");
-        res.send_response();
-    }));
+router.get("/blocking", Arc::new(|req, res| {
+    sleep(Duration::from_secs(5));
+    res.status(StatusCode::Ok).content("I am multi-threaded!");
+    res.send();
+}));
 
-    router.get("/blocking", Arc::new(|req, res| {
-        sleep(Duration::from_secs(5));
-        res.content("Hello... (I have to wait 5 seconds!) ...World!");
-        res.send_response();
-    }));
-
-    router.listen();
-}
+router.listen();
 ```
+To see more examples, check out the [examples folder](./examples)
